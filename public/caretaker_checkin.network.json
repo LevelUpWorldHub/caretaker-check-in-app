@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "description": "Caretaker Check-in helps a caregiver read a calm daily note and approve gentle check-ins. Private context is deny-by-default: downstream_fields are empty and upstream_fields are empty. Ring tokens, API keys, and video never cross an agent boundary.",
+    "private_context": {
+      "deny_by_default": true,
+      "downstream_fields": [],
+      "upstream_fields": []
+    }
+  },
+  "llm_config": {
+    "model": "grok-4.7",
+    "router": "https://api.x.ai/v1",
+    "note": "Hints only. The visitor's active router and model win. Do not enable web search or X search."
+  },
+  "tools": [
+    {
+      "name": "care_companion",
+      "function": {
+        "description": "Talk with the caregiver about today's routine, and delegate reading or drafting.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "inquiry": {
+              "type": "string",
+              "description": "The caregiver's question or request."
+            }
+          },
+          "required": ["inquiry"]
+        }
+      },
+      "instructions": "You are the front companion for Caretaker Check-in. Delegate questions about today's door, motion, meals, or the daily note to routine_reader. Delegate requests to draft, write, or prepare a check-in message to checkin_drafter. Questions about what a check-in is, or about metadata versus video, go to care_glossary. Use tool results only and never invent events, times, or devices. Never diagnose, never name a medical condition, and never say there is an emergency or that someone should call emergency services. You cannot send messages. A draft is not a sent message. Never ask for, repeat, or store a Ring token or an API key. Do not use web search or X search. Private care details stay in this page.",
+      "tools": ["routine_reader", "checkin_drafter", "care_glossary"]
+    },
+    {
+      "name": "routine_reader",
+      "function": {
+        "description": "Explain today's routine comparison using event metadata already on the page.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "question": {
+              "type": "string",
+              "description": "What the caregiver wants explained."
+            }
+          },
+          "required": ["question"]
+        }
+      },
+      "instructions": "Call website_get_care_state before you answer. Explain the windows using the returned details. Cite device names and times from that state. If a field is missing, say so. Do not invent events. Do not draft or send messages. Never diagnose and never claim an emergency. Do not use web search or X search.",
+      "tools": []
+    },
+    {
+      "name": "checkin_drafter",
+      "function": {
+        "description": "Prepare a gentle check-in draft for the caregiver to approve. Nothing is sent.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "reason": {
+              "type": "string",
+              "description": "Why a draft was requested."
+            }
+          },
+          "required": ["reason"]
+        }
+      },
+      "instructions": "Call website_get_care_state first. If morningMissed is false, say that no check-in is needed and do not call the draft tool. If morningMissed is true, call website_draft_check_in with suggestedCheckIn as the message and a short reason. The tool waits for the caregiver to confirm. If they decline, stop. Never claim a message was sent. Never diagnose and never claim an emergency. Do not use web search or X search.",
+      "tools": []
+    }
+  ]
+}

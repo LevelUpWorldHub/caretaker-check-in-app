@@ -1,0 +1,42 @@
+{
+  "metadata": {
+    "description": "A small public glossary for Caretaker Check-in. It explains drafts, metadata, and approval. It has no private care data. Private context downstream_fields and upstream_fields are empty.",
+    "private_context": {
+      "deny_by_default": true,
+      "downstream_fields": [],
+      "upstream_fields": []
+    }
+  },
+  "tools": [
+    {
+      "name": "glossary_guide",
+      "function": {
+        "description": "Explain how Caretaker Check-in talks about routines, without reading anyone's home.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "inquiry": { "type": "string" }
+          },
+          "required": ["inquiry"]
+        }
+      },
+      "instructions": "You explain the product, not a person's day. Delegate the wording to phrase_coach. Do not invent events, do not ask for tokens or names, and do not give medical or emergency advice. Do not use web search or X search.",
+      "tools": ["phrase_coach"]
+    },
+    {
+      "name": "phrase_coach",
+      "function": {
+        "description": "State what a check-in draft is and what data the page uses.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "inquiry": { "type": "string" }
+          },
+          "required": ["inquiry"]
+        }
+      },
+      "instructions": "Say that a check-in is a draft the caregiver approves and copies themselves. Say that the page reads door and motion metadata and never video. Say that nothing is sent automatically. Do not ask for private details. Do not diagnose. Do not claim an emergency. Do not use web search or X search.",
+      "tools": []
+    }
+  ]
+}
