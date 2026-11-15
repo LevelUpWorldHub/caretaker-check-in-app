@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "networks": {
+    "caretaker_checkin": {
+      "care_glossary": "/care_glossary"
+    }
+  }
+}
