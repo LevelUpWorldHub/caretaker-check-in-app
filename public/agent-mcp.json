@@ -1,0 +1,7 @@
+{
+  "protocol": "nsdeploy-agent-mcp/v1",
+  "network": "caretaker_checkin",
+  "front_man": "care_companion",
+  "available": false,
+  "reason": "Care data stays in the visitor's browser. This site does not expose a public MCP facade."
+}

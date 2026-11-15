@@ -1,0 +1,84 @@
+{
+  "brand": "Caretaker Check-in",
+  "networks": [
+    {
+      "name": "caretaker_checkin",
+      "front_man": "care_companion",
+      "hocon": "./caretaker_checkin.network.json",
+      "description": "Read a calm daily note and approve a gentle check-in. Nothing is sent automatically.",
+      "tags": ["deployed", "care", "grok"],
+      "sample_queries": [
+        "How does this morning compare with the usual routine?",
+        "Draft a gentle check-in for me to approve.",
+        "What is a check-in, and do you watch video?"
+      ]
+    },
+    {
+      "name": "care_glossary",
+      "front_man": "glossary_guide",
+      "hocon": "./care_glossary.network.json",
+      "description": "Explain check-in drafts and metadata without reading a household.",
+      "tags": ["glossary"],
+      "sample_queries": ["What is a check-in, and do you watch video?"]
+    }
+  ],
+  "llm_router": {
+    "base_url": "https://api.x.ai/v1",
+    "model": "grok-4.7",
+    "mock": false,
+    "byok_router": "https://api.x.ai/v1",
+    "search_tools": false
+  },
+  "allowed_peers": [],
+  "peer_policy": {
+    "mode": "closed",
+    "deny_origins": [],
+    "note": "The glossary is same-origin. Any other origin needs a visible approval before its manifest is fetched. A visitor key is sent only to the selected router."
+  },
+  "agent_mcp": {
+    "protocol": "nsdeploy-agent-mcp/v1",
+    "network": "caretaker_checkin",
+    "front_man": "care_companion",
+    "available": false,
+    "reason": "Care data stays in the visitor's browser. This site does not expose a public MCP facade."
+  },
+  "theme": {
+    "primary": "#2f5d4a"
+  },
+  "linking": {
+    "protocol": "nsdeploy-link/v1",
+    "exports": [
+      {
+        "network": "caretaker_checkin",
+        "front_man": "care_companion",
+        "aliases": ["caretaker_checkin", "care_companion"],
+        "url": "caretaker_checkin"
+      },
+      {
+        "network": "care_glossary",
+        "front_man": "glossary_guide",
+        "aliases": ["care_glossary", "glossary_guide"],
+        "url": "care_glossary"
+      }
+    ],
+    "imports": [],
+    "link_updates": {
+      "mode": "browser-local"
+    }
+  },
+  "deployment": {
+    "mode": "next",
+    "self_contained_runtime": true,
+    "browser_mock": false,
+    "direct_byok": false,
+    "byok_proxy": true,
+    "direct_mcp_requires_cors": true,
+    "public_mcp_facade": false,
+    "note": "The agent graph runs in the browser. A same-origin proxy can forward an optional visitor key to an OpenAI-compatible router. That proxy does not substitute a publisher key when a visitor key is present, and it does not send the key to peer sites."
+  },
+  "actions": {
+    "version": 1,
+    "module": "src/lib/site-actions.ts",
+    "agentTools": ["get_care_state", "draft_check_in", "update_baseline"]
+  }
+}
