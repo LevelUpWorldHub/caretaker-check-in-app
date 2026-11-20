@@ -85,12 +85,16 @@ export function groundedComplete(input: {
 }): ModelResponse {
   const names = calledNames(input.messages);
   const userText = lastUser(input.messages);
-  const wantsDraft = /check-?in|draft a|write a (?:note|message)|reach out|say hello/i.test(userText);
-  const wantsGlossary = /glossary|what is a check-in|metadata|video/i.test(userText);
+  const wantsGlossary = /glossary|what (?:is|are) (?:a )?check-?ins?\b|metadata|video|what does .* mean/i.test(userText);
+  // A question about what a check-in is must never open a draft. Only an explicit request drafts one.
+  const wantsDraft =
+    !wantsGlossary && /check-?in|draft a|write a (?:note|message)|reach out|say hello/i.test(userText);
 
   if (input.agent === "care_companion") {
-    if (wantsGlossary && has(input.tools, "care_glossary") && !names.has("care_glossary")) {
-      return call("care_glossary", { inquiry: userText });
+    if (wantsGlossary && has(input.tools, "care_glossary")) {
+      if (!names.has("care_glossary")) return call("care_glossary", { inquiry: userText });
+      const answer = lastTool(input.messages);
+      if (answer) return { content: summarize(answer) };
     }
     if (wantsDraft && has(input.tools, "checkin_drafter") && !names.has("checkin_drafter")) {
       return call("checkin_drafter", { reason: userText });

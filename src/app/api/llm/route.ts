@@ -1,4 +1,5 @@
 import { HttpStatusError, isRetryable, withResilience } from "@/lib/resilience";
+import { RouterUrlError, assertRouterUrl } from "@/lib/router-guard";
 import { sanitizeModelTools, type ToolSpec } from "@/lib/sanitize";
 
 export const dynamic = "force-dynamic";
@@ -6,17 +7,9 @@ export const dynamic = "force-dynamic";
 type ToolCall = { id: string; name: string; arguments: Record<string, unknown> };
 
 function routerFrom(header: string | null): string {
-  const fallback = (process.env.XAI_BASE_URL || "https://api.x.ai/v1").replace(/\/$/, "");
-  if (!header) return fallback;
-  let url: URL;
-  try {
-    url = new URL(header);
-  } catch {
-    throw new Error("The router URL is not valid.");
-  }
-  if (url.protocol !== "https:") throw new Error("The router URL must use https.");
-  if (url.username || url.password) throw new Error("Put the key in the key field, not in the URL.");
-  return url.toString().replace(/\/$/, "");
+  // The server's own router comes from the environment and is trusted. A visitor router must be allowlisted.
+  if (!header) return (process.env.XAI_BASE_URL || "https://api.x.ai/v1").replace(/\/$/, "");
+  return assertRouterUrl(header).toString().replace(/\/$/, "");
 }
 
 function modelFrom(header: string | null, fallback: string): string {
@@ -68,8 +61,9 @@ export async function POST(request: Request) {
   try {
     router = routerFrom(usingVisitor ? request.headers.get("x-router-base") : null);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "The router URL was rejected.";
-    return Response.json({ error: "bad_router", message }, { status: 400 });
+    const code = error instanceof RouterUrlError ? error.code : "router_invalid";
+    const message = error instanceof RouterUrlError ? error.message : "The router URL was rejected.";
+    return Response.json({ error: "bad_router", code, message }, { status: 400 });
   }
   const model = modelFrom(
     usingVisitor ? request.headers.get("x-model") : null,
@@ -98,6 +92,7 @@ export async function POST(request: Request) {
       async (signal) => {
         const response = await fetch(`${router}/chat/completions`, {
           method: "POST",
+          redirect: "manual",
           headers: {
             Authorization: apiKey.startsWith("Bearer ") ? apiKey : `Bearer ${apiKey}`,
             "Content-Type": "application/json",
@@ -105,6 +100,7 @@ export async function POST(request: Request) {
           body: JSON.stringify(payload),
           signal,
         });
+        // Redirects are never followed, and the upstream body is never passed back to the caller.
         if (!response.ok) throw new HttpStatusError(response.status);
         return response.json();
       },

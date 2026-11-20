@@ -80,6 +80,20 @@ export function reconcileCheckIns(input: {
   return next;
 }
 
+export function checkInWordingError(reasons: string[]): string {
+  return `That wording can't be saved: ${reasons.join(", ")}. Describe only the door and motion times.`;
+}
+
+/**
+ * Checks a status change before any state is touched. Returns an error to show inline,
+ * or null when the change can be applied. Dismissing is always allowed.
+ */
+export function checkInUpdateError(status: CheckIn["status"], message: string | undefined): string | null {
+  if (status === "dismissed" || message === undefined) return null;
+  const verdict = verifyText(message);
+  return verdict.ok ? null : checkInWordingError(verdict.reasons);
+}
+
 export function withCheckInStatus(
   items: CheckIn[],
   id: string,
@@ -92,7 +106,9 @@ export function withCheckInStatus(
     const nextMessage = message ?? item.message;
     const verdict = verifyText(nextMessage);
     if (!verdict.ok) {
-      throw new Error(`That wording can't be saved: ${verdict.reasons.join(", ")}`);
+      // Dismissing never saves new wording, so flagged edits are dropped instead of blocking the dismissal.
+      if (status === "dismissed") return { ...item, status, updatedAt: now, sent: false };
+      throw new Error(checkInWordingError(verdict.reasons));
     }
     return { ...item, status, message: nextMessage, updatedAt: now, sent: false };
   });

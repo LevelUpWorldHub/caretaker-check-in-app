@@ -11,7 +11,7 @@ import {
 } from "react";
 import { autonomyText } from "@/lib/autonomy";
 import { baselineErrors } from "@/lib/baseline";
-import { draftCheckInMessage, manualCheckIn, reconcileCheckIns, withCheckInStatus } from "@/lib/checkin";
+import { checkInUpdateError, draftCheckInMessage, manualCheckIn, reconcileCheckIns, withCheckInStatus } from "@/lib/checkin";
 import { defaultBaseline, defaultSettings } from "@/lib/defaults";
 import { selectFeed } from "@/lib/feed";
 import { fallbackNote } from "@/lib/fallback";
@@ -77,7 +77,7 @@ type CareContextValue = {
   saveBaseline: (next: Baseline) => string[];
   setDeviceRole: (deviceId: string, role: DeviceRole) => void;
   syncRing: (token: string) => Promise<void>;
-  updateCheckIn: (id: string, status: CheckInStatus, message?: string) => void;
+  updateCheckIn: (id: string, status: CheckInStatus, message?: string) => { ok: boolean; error?: string };
   addManualCheckIn: (message: string, reason: string) => { ok: boolean; error?: string; id?: string };
   refreshHealth: () => Promise<void>;
   clearLocal: () => void;
@@ -557,12 +557,22 @@ export function CareProvider({ children }: { children: ReactNode }) {
       }
     },
     updateCheckIn: (id, status, message) => {
-      try {
-        setCheckIns((items) => withCheckInStatus(items, id, status, message));
-        setCheckInError("");
-      } catch (error) {
-        setCheckInError(error instanceof Error ? error.message : "That wording can't be saved.");
+      // Verify before committing state. A throw inside the updater would escape this function
+      // and crash the page, because React runs updaters later during render.
+      const problem = checkInUpdateError(status, message);
+      if (problem) {
+        setCheckInError(problem);
+        return { ok: false, error: problem };
       }
+      setCheckIns((items) => {
+        try {
+          return withCheckInStatus(items, id, status, message);
+        } catch {
+          return items;
+        }
+      });
+      setCheckInError("");
+      return { ok: true };
     },
     addManualCheckIn,
     refreshHealth,

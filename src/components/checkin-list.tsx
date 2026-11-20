@@ -10,6 +10,12 @@ function Card({ item }: { item: CheckIn }) {
   const { updateCheckIn } = useCare();
   const [message, setMessage] = useState(item.message);
   const [copyNote, setCopyNote] = useState("");
+  const [error, setError] = useState("");
+  const apply = (status: CheckIn["status"]) => {
+    const result = updateCheckIn(item.id, status, message);
+    setError(result.ok ? "" : (result.error ?? "That wording can't be saved."));
+    return result.ok;
+  };
   const editable = item.status === "draft" || item.status === "approved";
 
   return (
@@ -25,8 +31,12 @@ function Card({ item }: { item: CheckIn }) {
         className="mt-4 min-h-32 text-lg leading-relaxed md:text-lg"
         value={message}
         disabled={!editable}
-        onChange={(event) => setMessage(event.target.value)}
+        onChange={(event) => {
+          setMessage(event.target.value);
+          if (error) setError("");
+        }}
         aria-label="Check-in wording"
+        aria-invalid={error ? true : undefined}
       />
       <div className="mt-4 flex flex-wrap gap-2">
         {item.status === "draft" ? (
@@ -34,7 +44,7 @@ function Card({ item }: { item: CheckIn }) {
             type="button"
             className="h-12 px-4 text-base"
             data-testid="approve-wording"
-            onClick={() => updateCheckIn(item.id, "approved", message)}
+            onClick={() => apply("approved")}
           >
             Approve wording
           </Button>
@@ -44,7 +54,7 @@ function Card({ item }: { item: CheckIn }) {
           variant="outline"
           className="h-12 bg-white px-4 text-base"
           onClick={async () => {
-            updateCheckIn(item.id, "copied", message);
+            if (!apply("copied")) return;
             try {
               await navigator.clipboard.writeText(message);
               setCopyNote("Copied. Send it from your own phone or email if you want to.");
@@ -60,12 +70,17 @@ function Card({ item }: { item: CheckIn }) {
             type="button"
             variant="ghost"
             className="h-12 px-4 text-base"
-            onClick={() => updateCheckIn(item.id, "dismissed", message)}
+            onClick={() => apply("dismissed")}
           >
             Dismiss
           </Button>
         ) : null}
       </div>
+      {error ? (
+        <p className="mt-3 rounded-2xl bg-[#f6e4d8] px-4 py-3 text-base text-[#6a3b28]" role="alert" data-testid="checkin-inline-error">
+          {error}
+        </p>
+      ) : null}
       {item.status === "approved" ? (
         <p className="mt-3 text-base text-[#234237]">
           Approved to send yourself. This app will not send it.

@@ -26,6 +26,9 @@ export type AgentNetwork = {
       upstream_fields?: string[];
     };
   };
+  /** Bare peer names the network may call. links.json binds each one to a URL. */
+  link_slots?: Record<string, { callers?: string[] }>;
+  link_labels?: Record<string, string>;
   tools: AgentNode[];
 };
 

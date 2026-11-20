@@ -7,7 +7,7 @@ import network from "../public/caretaker_checkin.network.json";
 import glossary from "../public/care_glossary.network.json";
 import links from "../public/links.json";
 
-const published = network as AgentNetwork;
+const published = network as unknown as AgentNetwork;
 const linkMap = links.networks.caretaker_checkin;
 
 describe("published agent network", () => {

@@ -12,6 +12,12 @@
     "router": "https://api.x.ai/v1",
     "note": "Hints only. The visitor's active router and model win. Do not enable web search or X search."
   },
+  "link_slots": {
+    "care_glossary": { "callers": ["care_companion"] }
+  },
+  "link_labels": {
+    "care_glossary": "the care glossary network"
+  },
   "tools": [
     {
       "name": "care_companion",

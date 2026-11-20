@@ -222,7 +222,7 @@ export function AgentPanel() {
               key={prompt}
               type="button"
               variant="outline"
-              className="h-auto bg-white px-3 py-2 text-left text-base whitespace-normal"
+              className="h-auto max-w-full min-w-0 shrink justify-start bg-white px-3 py-2 text-left text-base whitespace-normal break-words"
               onClick={() => void ask(prompt)}
             >
               {prompt}
