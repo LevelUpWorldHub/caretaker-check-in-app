@@ -115,7 +115,7 @@ export function CheckInList() {
       ) : (
         <div className="grid gap-4">
           {ordered.map((item) => (
-            <Card key={item.id} item={item} />
+            <Card key={`${item.id}:${item.updatedAt}`} item={item} />
           ))}
         </div>
       )}
